@@ -1,0 +1,77 @@
+name: Bug report
+description: Report a defect in the `clarismd` Python SDK.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug report. Please give us enough detail to reproduce.
+
+        For **security vulnerabilities** — do **not** file a public issue. See [SECURITY.md](../blob/main/SECURITY.md).
+
+  - type: input
+    id: sdk-version
+    attributes:
+      label: SDK version
+      description: Output of `python -c "import clarismd; print(clarismd.__version__)"`.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      placeholder: "3.12.5"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 15.0 / Ubuntu 24.04 / Windows 11"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug. Include the `request_id` from any error message — it lets us correlate with backend logs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Minimal Python snippet that reproduces the issue.
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Stack trace, logs, or response body. Redact any PHI before pasting.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I'm on the latest `clarismd` release
+          required: true
+        - label: I've redacted any PHI from the snippets above
+          required: true

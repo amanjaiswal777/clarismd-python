@@ -1,5 +1,11 @@
 # clarismd
 
+[![PyPI](https://img.shields.io/pypi/v/clarismd.svg)](https://pypi.org/project/clarismd/)
+[![Python versions](https://img.shields.io/pypi/pyversions/clarismd.svg)](https://pypi.org/project/clarismd/)
+[![CI](https://github.com/clarismd/clarismd-python/actions/workflows/ci.yml/badge.svg)](https://github.com/clarismd/clarismd-python/actions/workflows/ci.yml)
+[![License](https://img.shields.io/pypi/l/clarismd.svg)](./LICENSE)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/clarismd.svg)](https://pypi.org/project/clarismd/)
+
 Official Python SDK for the [ClarisMD](https://clarismd.com) governed-AI gateway
 for healthcare. One-line drop-in replacement for the OpenAI SDK with PHI
 detection, audit logging, and configurable policy enforcement built in.
@@ -238,4 +244,11 @@ so you can ship it inside any application without copyleft obligations.
 
 ## Contributing
 
-Issues and PRs welcome at <https://github.com/clarismd/clarismd>.
+Issues and PRs welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the
+dev setup and PR conventions, and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md)
+for community expectations.
+
+## Security
+
+Found a vulnerability? Please report it privately per
+[`SECURITY.md`](./SECURITY.md) — do not open a public issue.
