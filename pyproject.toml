@@ -48,9 +48,9 @@ dev = [
 [project.urls]
 Homepage = "https://clarismd.com"
 Documentation = "https://docs.clarismd.com"
-Repository = "https://github.com/clarismd/clarismd-python"
-Issues = "https://github.com/clarismd/clarismd-python/issues"
-Changelog = "https://github.com/clarismd/clarismd-python/blob/main/CHANGELOG.md"
+Repository = "https://github.com/amanjaiswal777/clarismd-python"
+Issues = "https://github.com/amanjaiswal777/clarismd-python/issues"
+Changelog = "https://github.com/amanjaiswal777/clarismd-python/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/clarismd"]

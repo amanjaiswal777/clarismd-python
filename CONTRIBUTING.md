@@ -92,6 +92,6 @@ only.
 ## Reporting bugs / requesting features
 
 Use the issue templates at
-<https://github.com/clarismd/clarismd-python/issues/new/choose>.
+<https://github.com/amanjaiswal777/clarismd-python/issues/new/choose>.
 For security issues, **do not** open a public issue — see
 [`SECURITY.md`](./SECURITY.md).

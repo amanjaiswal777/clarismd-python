@@ -20,7 +20,7 @@ These run once per project, not per release. Track in
 2. **Configure trusted publishers.**
    - In <https://pypi.org/manage/project/clarismd/settings/publishing/>,
      add a publisher: workflow `python-sdk-publish.yml`, repo
-     `clarismd/clarismd-python`, environment `pypi`.
+     `amanjaiswal777/clarismd-python`, environment `pypi`.
    - Repeat on TestPyPI with environment `testpypi`.
    - In the GitHub repo, create matching environments under
      **Settings → Environments**: `pypi` and `testpypi`. Restrict
