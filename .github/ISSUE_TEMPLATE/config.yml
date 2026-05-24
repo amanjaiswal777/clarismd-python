@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/amanjaiswal777/clarismd-python/security/policy
+    about: Please report security issues privately to security@clarismd.com — see SECURITY.md.
+  - name: Question or general help
+    url: https://github.com/amanjaiswal777/clarismd-python/discussions
+    about: Use Discussions for questions, design ideas, and integration help.

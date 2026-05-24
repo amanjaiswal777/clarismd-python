@@ -1,0 +1,8 @@
+# openapi-python-client config (consumed by scripts/codegen.sh).
+# The generated tree is namespaced under clarismd._generated and is treated
+# as private — the public surface (clarismd.ClarisMD, AsyncClarisMD, errors,
+# resources) is hand-written and stable across regenerations.
+project_name_override: clarismd-generated
+package_name_override: clarismd._generated
+field_constraints: true
+use_path_prefixes_for_title_model_names: true

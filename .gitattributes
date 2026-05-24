@@ -1,0 +1,35 @@
+# Normalize line endings — text files always LF in the repo
+* text=auto eol=lf
+
+# Python source
+*.py text eol=lf diff=python
+
+# Config / docs
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+
+# Binary — no diff, no eol conversion
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.whl binary
+*.tar.gz binary
+
+# Exclude from sdist via .gitattributes export-ignore — keeps the
+# wheel/sdist small for users running `pip download` of the source.
+.github/        export-ignore
+tests/          export-ignore
+examples/       export-ignore
+.editorconfig   export-ignore
+.gitattributes  export-ignore
+.gitignore      export-ignore
+CONTRIBUTING.md export-ignore
+RELEASING.md    export-ignore
