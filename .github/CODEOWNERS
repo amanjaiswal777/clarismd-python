@@ -1,0 +1,4 @@
+# Require @amanjaiswal777 to review changes before merge to main.
+# Used with branch protection "Require review from Code Owners".
+
+* @amanjaiswal777
