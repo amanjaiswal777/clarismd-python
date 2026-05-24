@@ -1,10 +1,16 @@
-# clarismd
+<p align="center">
+  <img src="./assets/logo.svg" alt="ClarisMD" width="120" height="120"/>
+</p>
 
-[![PyPI](https://img.shields.io/pypi/v/clarismd.svg)](https://pypi.org/project/clarismd/)
-[![Python versions](https://img.shields.io/pypi/pyversions/clarismd.svg)](https://pypi.org/project/clarismd/)
-[![CI](https://github.com/clarismd/clarismd-python/actions/workflows/ci.yml/badge.svg)](https://github.com/clarismd/clarismd-python/actions/workflows/ci.yml)
-[![License](https://img.shields.io/pypi/l/clarismd.svg)](./LICENSE)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/clarismd.svg)](https://pypi.org/project/clarismd/)
+<h1 align="center">clarismd</h1>
+
+<p align="center">
+  <a href="https://pypi.org/project/clarismd/"><img alt="PyPI" src="https://img.shields.io/pypi/v/clarismd.svg"/></a>
+  <a href="https://pypi.org/project/clarismd/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/clarismd.svg"/></a>
+  <a href="https://github.com/clarismd/clarismd-python/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/clarismd/clarismd-python/actions/workflows/ci.yml/badge.svg"/></a>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/pypi/l/clarismd.svg"/></a>
+  <a href="https://pypi.org/project/clarismd/"><img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/clarismd.svg"/></a>
+</p>
 
 Official Python SDK for the [ClarisMD](https://clarismd.com) governed-AI gateway
 for healthcare. One-line drop-in replacement for the OpenAI SDK with PHI
@@ -19,8 +25,32 @@ detection, audit logging, and configurable policy enforcement built in.
 
 ## Install
 
+From PyPI:
+
 ```bash
 pip install clarismd
+```
+
+From the public GitHub repo (latest `main`, or pin to a tag/commit):
+
+```bash
+pip install git+https://github.com/clarismd/clarismd-python.git
+pip install git+https://github.com/clarismd/clarismd-python.git@v0.1.0
+pip install git+https://github.com/clarismd/clarismd-python.git@<commit-sha>
+```
+
+In a `requirements.txt`:
+
+```
+clarismd @ git+https://github.com/clarismd/clarismd-python.git@v0.1.0
+```
+
+For local development (editable install with dev extras):
+
+```bash
+git clone https://github.com/clarismd/clarismd-python.git
+cd clarismd-python
+pip install -e ".[dev]"
 ```
 
 Python 3.9+ supported.
