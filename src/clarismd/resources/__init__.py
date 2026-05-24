@@ -13,6 +13,7 @@ from .chat import (
 from .completions import AsyncCompletionsResource, CompletionsResource
 from .compliance import AsyncComplianceResource, ComplianceResource
 from .embeddings import AsyncEmbeddingsResource, EmbeddingsResource
+from .health import AsyncHealthResource, HealthResource
 from .keys import AsyncKeysResource, KeysResource
 from .moderations import AsyncModerationsResource, ModerationsResource
 from .phi import AsyncPHIResource, PHIResource
@@ -24,6 +25,7 @@ __all__ = [
     "AsyncCompletionsResource",
     "AsyncComplianceResource",
     "AsyncEmbeddingsResource",
+    "AsyncHealthResource",
     "AsyncKeysResource",
     "AsyncModerationsResource",
     "AsyncPHIResource",
@@ -33,6 +35,7 @@ __all__ = [
     "CompletionsResource",
     "ComplianceResource",
     "EmbeddingsResource",
+    "HealthResource",
     "KeysResource",
     "ModerationsResource",
     "PHIResource",

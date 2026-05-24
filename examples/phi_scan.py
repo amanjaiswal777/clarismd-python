@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from clarismd import ClarisMD
 
-
 SAMPLE = (
     "Patient John Doe, MRN 4471, called the clinic. "
     "Reach him at j.doe@example.test or 555-867-5309."

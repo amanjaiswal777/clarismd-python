@@ -62,6 +62,7 @@ if TYPE_CHECKING:  # pragma: no cover - type-only
         AsyncEmbeddingsResource,
         EmbeddingsResource,
     )
+    from .resources.health import AsyncHealthResource, HealthResource
     from .resources.keys import AsyncKeysResource, KeysResource
     from .resources.moderations import (
         AsyncModerationsResource,
@@ -296,6 +297,7 @@ class ClarisMD(_BaseClient):
     audit: AuditResource
     compliance: ComplianceResource
     keys: KeysResource
+    health: HealthResource
 
     def __init__(
         self,
@@ -324,6 +326,7 @@ class ClarisMD(_BaseClient):
         from .resources.completions import CompletionsResource
         from .resources.compliance import ComplianceResource
         from .resources.embeddings import EmbeddingsResource
+        from .resources.health import HealthResource
         from .resources.keys import KeysResource
         from .resources.moderations import ModerationsResource
         from .resources.phi import PHIResource
@@ -336,6 +339,7 @@ class ClarisMD(_BaseClient):
         self.audit = AuditResource(self)
         self.compliance = ComplianceResource(self)
         self.keys = KeysResource(self)
+        self.health = HealthResource(self)
 
     # -- context manager ----------------------------------------------------
 
@@ -483,6 +487,7 @@ class AsyncClarisMD(_BaseClient):
     audit: AsyncAuditResource
     compliance: AsyncComplianceResource
     keys: AsyncKeysResource
+    health: AsyncHealthResource
 
     def __init__(
         self,
@@ -513,6 +518,7 @@ class AsyncClarisMD(_BaseClient):
         from .resources.completions import AsyncCompletionsResource
         from .resources.compliance import AsyncComplianceResource
         from .resources.embeddings import AsyncEmbeddingsResource
+        from .resources.health import AsyncHealthResource
         from .resources.keys import AsyncKeysResource
         from .resources.moderations import AsyncModerationsResource
         from .resources.phi import AsyncPHIResource
@@ -525,6 +531,7 @@ class AsyncClarisMD(_BaseClient):
         self.audit = AsyncAuditResource(self)
         self.compliance = AsyncComplianceResource(self)
         self.keys = AsyncKeysResource(self)
+        self.health = AsyncHealthResource(self)
 
     async def __aenter__(self) -> AsyncClarisMD:
         return self

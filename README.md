@@ -74,6 +74,13 @@ Or pass it explicitly:
 client = ClarisMD(base_url="https://gateway.your-org.internal/v1")
 ```
 
+Verify the gateway is reachable (no API key required):
+
+```python
+status = client.health.check()
+print(status.status, status.version)  # "ok" 0.4.2
+```
+
 ---
 
 ## Streaming

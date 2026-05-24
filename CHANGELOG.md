@@ -17,7 +17,7 @@ Initial public release.
 - Resources: `chat.completions`, `completions`, `embeddings`,
   `moderations`, `phi.scan`, `audit.{list,get,export}`,
   `compliance.{score,requirements,evidence,acknowledge}`,
-  `keys.{list,create,get,delete}`.
+  `keys.{list,create,get,delete}`, `health.check`.
 - SSE streaming on `chat.completions.create(stream=True)`; chunks
   iterate as `ChatCompletionChunk` and stop at `data: [DONE]`.
 - Closed-set error hierarchy mapped from the backend's error envelope:
@@ -34,8 +34,6 @@ Initial public release.
 - ClarisMD-specific overrides on chat / completions / embeddings:
   `clarismd_policy`, `clarismd_phi_action`,
   `clarismd_idempotency_key`.
-- `with_raw_response()` escape hatch returning the underlying
-  `httpx.Response` for advanced inspection.
 - Pyright-strict typing across the public surface.
 
 [Unreleased]: https://github.com/clarismd/clarismd-python/compare/v0.1.0...HEAD
