@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clarismd"
-version = "0.1.0"
+version = "0.1.1"
 description = "Open-source AI gateway with PHI-aware governance — Python client"
 license = { text = "Apache-2.0" }
 readme = "README.md"

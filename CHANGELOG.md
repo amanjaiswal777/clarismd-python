@@ -6,6 +6,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-08-21
+
 ### Fixed
 
 - A retried request now carries the same `Idempotency-Key` as the
@@ -48,5 +50,6 @@ Initial public release.
   `clarismd_idempotency_key`.
 - Pyright-strict typing across the public surface.
 
-[Unreleased]: https://github.com/amanjaiswal777/clarismd-python/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/amanjaiswal777/clarismd-python/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/amanjaiswal777/clarismd-python/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/amanjaiswal777/clarismd-python/releases/tag/v0.1.0
