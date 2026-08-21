@@ -6,6 +6,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- A retried request now carries the same `Idempotency-Key` as the
+  attempt it retries. The header was rebuilt inside the retry loop on
+  both `ClarisMD.request` and `AsyncClarisMD.request`, so an
+  auto-generated key was a fresh `uuid4` per attempt and the gateway
+  saw several unrelated POSTs where the caller made one — its
+  idempotency cache could never match. A POST that timed out after the
+  gateway had already accepted and metered it was therefore billed
+  again on retry. Callers who pass an explicit
+  `clarismd_idempotency_key` were never affected.
+
 ## [0.1.0] — 2026-06-21
 
 Initial public release.

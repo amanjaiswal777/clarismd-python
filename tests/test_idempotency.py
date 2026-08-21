@@ -4,7 +4,10 @@
 """Idempotency-Key auto-generation; identical key returns cached response."""
 from __future__ import annotations
 
-from clarismd import ClarisMD
+import httpx
+import pytest
+
+from clarismd import AsyncClarisMD, ClarisMD
 
 from .conftest import BASE_URL
 
@@ -64,6 +67,85 @@ def test_explicit_key_replays_cached_response(
 
     requests = httpx_mock.get_requests()
     assert all(r.headers["Idempotency-Key"] == fixed for r in requests)
+
+
+def test_retry_reuses_the_same_auto_generated_key(
+    client: ClarisMD, httpx_mock
+) -> None:
+    """A retry must carry the key of the attempt it is retrying.
+
+    This is the assertion the defect could not survive. The header build sat
+    inside the retry loop, so an auto-generated key was a fresh uuid4 per
+    attempt — the server saw two unrelated POSTs where the caller made one, and
+    the idempotency cache could never match. In a product that meters cost, a
+    5xx retried once billed twice.
+    """
+    httpx_mock.add_response(
+        method="POST",
+        url=CHAT_URL,
+        status_code=500,
+        json={"error": {"type": "internal_server_error", "message": "boom"}},
+    )
+    httpx_mock.add_response(method="POST", url=CHAT_URL, json=_ok())
+
+    client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Hi"}],
+    )
+
+    keys = [r.headers["Idempotency-Key"] for r in httpx_mock.get_requests()]
+    assert len(keys) == 2, "expected one retry"
+    assert keys[0] == keys[1]
+
+
+def test_retry_after_timeout_reuses_the_same_key(
+    client: ClarisMD, httpx_mock
+) -> None:
+    """The timeout path is the one that actually costs money.
+
+    A 500 means the gateway rejected the request. A timeout means it may have
+    completed, billed and been metered while the response was in flight — so
+    this is the retry where a fresh key turns one charge into two.
+    """
+    httpx_mock.add_exception(httpx.ReadTimeout("timed out"))
+    httpx_mock.add_response(method="POST", url=CHAT_URL, json=_ok())
+
+    client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Hi"}],
+    )
+
+    keys = [r.headers["Idempotency-Key"] for r in httpx_mock.get_requests()]
+    assert len(keys) == 2, "expected one retry"
+    assert keys[0] == keys[1]
+
+
+@pytest.mark.asyncio
+async def test_async_retry_reuses_the_same_auto_generated_key(
+    async_client: AsyncClarisMD, httpx_mock
+) -> None:
+    """The async client had the identical defect and needs the identical guard.
+
+    Asserted separately rather than parametrized: the two request loops are
+    duplicated source, so a fix applied to one and not the other is exactly the
+    failure mode worth catching.
+    """
+    httpx_mock.add_response(
+        method="POST",
+        url=CHAT_URL,
+        status_code=503,
+        json={"error": {"type": "service_unavailable", "message": "draining"}},
+    )
+    httpx_mock.add_response(method="POST", url=CHAT_URL, json=_ok())
+
+    await async_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Hi"}],
+    )
+
+    keys = [r.headers["Idempotency-Key"] for r in httpx_mock.get_requests()]
+    assert len(keys) == 2, "expected one retry"
+    assert keys[0] == keys[1]
 
 
 def test_get_requests_have_no_idempotency_header(

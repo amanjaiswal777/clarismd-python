@@ -383,13 +383,21 @@ class ClarisMD(_BaseClient):
         attempt = 0
         last_exc: Optional[Exception] = None
 
+        # Built once, above the loop, because a retry must carry the SAME
+        # Idempotency-Key as the attempt it retries. Rebuilt per attempt, an
+        # auto-generated key is a fresh uuid4 every time, so the server sees N
+        # unrelated requests instead of N attempts at one — and the request that
+        # timed out after the gateway had already billed it gets billed again.
+        # `_build_headers` is otherwise a pure function of arguments that do not
+        # change inside the loop, so hoisting costs nothing.
+        headers = self._build_headers(
+            method=method,
+            extra=opts.extra_headers,
+            idempotency_key=opts.idempotency_key,
+        )
+        timeout = opts.timeout if opts.timeout is not None else self.timeout
+
         while True:
-            headers = self._build_headers(
-                method=method,
-                extra=opts.extra_headers,
-                idempotency_key=opts.idempotency_key,
-            )
-            timeout = opts.timeout if opts.timeout is not None else self.timeout
             try:
                 response = self._http.request(
                     method=method.upper(),
@@ -559,13 +567,16 @@ class AsyncClarisMD(_BaseClient):
         attempt = 0
         last_exc: Optional[Exception] = None
 
+        # Same hoist as ClarisMD.request, same reason: one Idempotency-Key per
+        # logical request, not one per attempt.
+        headers = self._build_headers(
+            method=method,
+            extra=opts.extra_headers,
+            idempotency_key=opts.idempotency_key,
+        )
+        timeout = opts.timeout if opts.timeout is not None else self.timeout
+
         while True:
-            headers = self._build_headers(
-                method=method,
-                extra=opts.extra_headers,
-                idempotency_key=opts.idempotency_key,
-            )
-            timeout = opts.timeout if opts.timeout is not None else self.timeout
             try:
                 response = await self._http.request(
                     method=method.upper(),
