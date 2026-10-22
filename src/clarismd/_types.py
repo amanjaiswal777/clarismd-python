@@ -3,8 +3,7 @@
 
 """Public Pydantic models returned by SDK calls.
 
-These mirror the response shapes documented in
-``LAUNCH_PLAN/17-v1-api-contract.md`` — each field is set permissively
+These mirror the gateway's v1 API response shapes — each field is set permissively
 (``Optional`` / extra-allow) so additive backend changes do not break
 client code that pins an older SDK version. Once OpenAPI codegen is in
 place, narrower generated models will live under ``_generated/``; until

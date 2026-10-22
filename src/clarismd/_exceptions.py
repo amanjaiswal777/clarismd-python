@@ -3,10 +3,9 @@
 
 """Exception hierarchy for the ClarisMD Python SDK.
 
-Mirrors the closed-set ``error.type`` values defined in the v1 API
-contract (see ``LAUNCH_PLAN/17-v1-api-contract.md``). The mapping is
-intentionally one-to-one so callers can do ``except RateLimitError`` (for
-example) without inspecting status codes.
+Mirrors the closed-set ``error.type`` values defined in the gateway's v1 API
+contract. The mapping is intentionally one-to-one so callers can do
+``except RateLimitError`` (for example) without inspecting status codes.
 
 Every API-derived exception carries the metadata the backend's error
 envelope returns: ``status_code``, ``code``, ``message``, ``param``, and

@@ -105,8 +105,7 @@ def _resolve_api_key(api_key: Optional[str]) -> Optional[str]:
 def _parse_retry_after(value: str) -> Optional[float]:
     """Parse ``Retry-After`` (seconds-only; HTTP-date is ignored).
 
-    The gateway emits an integer-seconds value in line with
-    ``LAUNCH_PLAN/17-v1-api-contract.md``. If the header ever carries an
+    The gateway emits an integer-seconds value. If the header ever carries an
     HTTP-date we just ignore it and fall back to exponential backoff —
     the SDK's retry behavior must remain bounded.
     """
@@ -277,7 +276,7 @@ class ClarisMD(_BaseClient):
 
         from clarismd import ClarisMD
 
-        client = ClarisMD(api_key="cmd-...")
+        client = ClarisMD(api_key="clr_live_...")
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": "Hello"}],

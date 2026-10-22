@@ -74,7 +74,7 @@ print(resp.choices[0].message.content)
 Set your API key once:
 
 ```bash
-export CLARISMD_API_KEY=cmd-...
+export CLARISMD_API_KEY=clr_live_...
 ```
 
 ---
@@ -101,7 +101,7 @@ Point the SDK at your own gateway with one environment variable:
 
 ```bash
 export CLARISMD_BASE_URL=https://gateway.your-org.internal/v1
-export CLARISMD_API_KEY=cmd-...
+export CLARISMD_API_KEY=clr_live_...
 ```
 
 Or pass it explicitly:
@@ -175,6 +175,8 @@ if result.detected:
 Pull a signed evidence bundle for a date range:
 
 ```python
+import base64
+import json
 from datetime import datetime, timezone
 
 bundle = client.audit.export(
@@ -182,8 +184,10 @@ bundle = client.audit.export(
     start_date=datetime(2026, 5, 1, tzinfo=timezone.utc),
     end_date=datetime(2026, 5, 31, tzinfo=timezone.utc),
 )
+# The gateway returns a signed JSON envelope with the PDF base64-encoded inside.
+envelope = json.loads(bundle)
 with open("audit-may.pdf", "wb") as f:
-    f.write(bundle)
+    f.write(base64.b64decode(envelope["pdf_base64"]))
 ```
 
 ---
@@ -274,11 +278,31 @@ so you can ship it inside any application without copyleft obligations.
 
 ## Contributing
 
-Issues and PRs welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the
-dev setup and PR conventions, and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md)
-for community expectations.
+Issues and PRs welcome. Before opening a PR, run the checks CI enforces:
+
+```bash
+pip install -e ".[dev]"
+ruff check src tests examples
+pyright
+pytest --cov=clarismd --cov-fail-under=85
+```
+
+Add a bullet under `[Unreleased]` in `CHANGELOG.md` for any user-visible change.
+Contributions are accepted under Apache-2.0 (LICENSE §5).
+
+## Releasing (maintainers)
+
+1. Bump `version` in `pyproject.toml` **and** `__version__` in `src/clarismd/_version.py`.
+2. In `CHANGELOG.md`, move `[Unreleased]` items to `## [X.Y.Z] — YYYY-MM-DD` and update the compare links.
+3. `git commit -am "Release vX.Y.Z" && git tag -a vX.Y.Z -m vX.Y.Z && git push origin main vX.Y.Z`
+
+`.github/workflows/publish.yml` fails if the tag ≠ `_version.py`, then builds and uploads to
+PyPI via trusted publishing (GitHub environment `pypi`). PyPI never accepts a re-upload of
+the same version — yank a broken release and ship the next patch.
 
 ## Security
 
-Found a vulnerability? Please report it privately per
-[`SECURITY.md`](./SECURITY.md) — do not open a public issue.
+Report vulnerabilities privately to **security@clarismd.com** — do not open a
+public issue. Include the SDK version or commit, reproduction steps, and impact.
+We acknowledge within 2 business days, follow 90-day coordinated disclosure,
+and patch the latest minor line (currently `0.1.x`).

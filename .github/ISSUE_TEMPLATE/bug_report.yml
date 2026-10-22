@@ -7,7 +7,7 @@ body:
       value: |
         Thanks for filing a bug report. Please give us enough detail to reproduce.
 
-        For **security vulnerabilities** — do **not** file a public issue. See [SECURITY.md](../blob/main/SECURITY.md).
+        For **security vulnerabilities** — do **not** file a public issue. Email security@clarismd.com instead.
 
   - type: input
     id: sdk-version
