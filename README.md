@@ -53,7 +53,7 @@ cd clarismd-python
 pip install -e ".[dev]"
 ```
 
-Python 3.9+ supported.
+Python 3.10+ supported.
 
 ---
 

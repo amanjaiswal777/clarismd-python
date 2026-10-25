@@ -6,6 +6,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Python 3.10 is now the minimum. The fix for anyio's TLS host-name
+  advisory (GHSA-82r6-8w77-94w6), which the async client's TLS
+  connections go through, ships only in anyio 4.14.2, and anyio
+  4.13+ requires Python 3.10.
+- Dependency floors now exclude versions with known advisories:
+  `pydantic>=2.4`, `anyio>=4.14.2`, `certifi>=2026.10.19`,
+  `h11>=0.16`, `idna>=3.15`.
+
 ## [0.1.1] — 2026-08-21
 
 ### Fixed
