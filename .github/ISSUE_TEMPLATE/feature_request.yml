@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a new capability for the `clarismd` Python SDK.
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for the SDK? Tell us the problem first, then the
+        proposal — that ordering helps us evaluate alternatives.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Start with the user-facing pain. What were you trying to do when you hit it?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API or behavior
+      description: A snippet of what the call site would look like is the highest-bandwidth way to communicate this.
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Workarounds you've tried, related libraries, why they fall short.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Does this require a backend change?
+      description: New endpoints / fields belong in the platform repo first; this SDK then exposes them.
+      options:
+        - "No — pure SDK addition"
+        - "Yes — backend change needed"
+        - "Unsure"
+    validations:
+      required: true
