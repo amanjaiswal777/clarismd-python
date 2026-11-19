@@ -14,30 +14,27 @@ from ._base import _AsyncResource, _options, _SyncResource
 def _create_body(
     *,
     name: Optional[str],
-    scopes: Optional[List[str]],
+    permissions: Optional[List[str]],
+    expires_in_days: Optional[int],
 ) -> Dict[str, Any]:
     body: Dict[str, Any] = {}
     if name is not None:
         body["name"] = name
-    if scopes is not None:
-        body["scopes"] = scopes
+    if permissions is not None:
+        body["permissions"] = permissions
+    if expires_in_days is not None:
+        body["expires_in_days"] = expires_in_days
     return body
 
 
-def _keys_from_envelope(raw: Any) -> List[APIKey]:
-    if isinstance(raw, list):
-        items = raw
-    elif isinstance(raw, dict):
-        candidate = raw.get("data")
-        items = candidate if isinstance(candidate, list) else []
-    else:
-        items = []
-    return [APIKey.model_validate(item) for item in items]
+# The gateway returns a bare array / bare object (no ``{"data": ...}`` envelope).
+def _keys_from_response(raw: Any) -> List[APIKey]:
+    if not isinstance(raw, list):
+        raise ValueError("Unexpected key list response shape from gateway.")
+    return [APIKey.model_validate(item) for item in raw]
 
 
-def _key_from_envelope(raw: Any) -> APIKey:
-    if isinstance(raw, dict) and "data" in raw and isinstance(raw["data"], dict):
-        return APIKey.model_validate(raw["data"])
+def _key_from_response(raw: Any) -> APIKey:
     if isinstance(raw, dict):
         return APIKey.model_validate(raw)
     raise ValueError("Unexpected key response shape from gateway.")
@@ -58,21 +55,22 @@ class KeysResource(_SyncResource):
             timeout=timeout,
         )
         raw = self._client.request("GET", "/keys", options=opts)
-        return _keys_from_envelope(raw)
+        return _keys_from_response(raw)
 
     def create(
         self,
         *,
         name: Optional[str] = None,
-        scopes: Optional[List[str]] = None,
+        permissions: Optional[List[str]] = None,
+        expires_in_days: Optional[int] = None,
         clarismd_idempotency_key: Union[str, None, bool] = None,
         extra_headers: Optional[Mapping[str, str]] = None,
         timeout: Optional[float] = None,
     ) -> APIKey:
-        """Create an API key. The full ``secret`` is returned **once** — store it now.
+        """Create an API key. The full secret is returned **once**, in ``key`` — store it now.
 
-        The gateway returns the secret on this response only; subsequent
-        ``get`` calls return the metadata without the secret.
+        Subsequent ``get`` / ``list`` calls return metadata only (``key_prefix``).
+        ``expires_in_days`` is 1-365; omit it for a non-expiring key.
         """
         opts = _options(
             idempotency=clarismd_idempotency_key,
@@ -84,10 +82,12 @@ class KeysResource(_SyncResource):
         raw = self._client.request(
             "POST",
             "/keys",
-            json_body=_create_body(name=name, scopes=scopes),
+            json_body=_create_body(
+                name=name, permissions=permissions, expires_in_days=expires_in_days
+            ),
             options=opts,
         )
-        return _key_from_envelope(raw)
+        return _key_from_response(raw)
 
     def get(
         self,
@@ -104,7 +104,7 @@ class KeysResource(_SyncResource):
             timeout=timeout,
         )
         raw = self._client.request("GET", f"/keys/{key_id}", options=opts)
-        return _key_from_envelope(raw)
+        return _key_from_response(raw)
 
     def delete(
         self,
@@ -138,13 +138,14 @@ class AsyncKeysResource(_AsyncResource):
             timeout=timeout,
         )
         raw = await self._client.request("GET", "/keys", options=opts)
-        return _keys_from_envelope(raw)
+        return _keys_from_response(raw)
 
     async def create(
         self,
         *,
         name: Optional[str] = None,
-        scopes: Optional[List[str]] = None,
+        permissions: Optional[List[str]] = None,
+        expires_in_days: Optional[int] = None,
         clarismd_idempotency_key: Union[str, None, bool] = None,
         extra_headers: Optional[Mapping[str, str]] = None,
         timeout: Optional[float] = None,
@@ -159,10 +160,12 @@ class AsyncKeysResource(_AsyncResource):
         raw = await self._client.request(
             "POST",
             "/keys",
-            json_body=_create_body(name=name, scopes=scopes),
+            json_body=_create_body(
+                name=name, permissions=permissions, expires_in_days=expires_in_days
+            ),
             options=opts,
         )
-        return _key_from_envelope(raw)
+        return _key_from_response(raw)
 
     async def get(
         self,
@@ -179,7 +182,7 @@ class AsyncKeysResource(_AsyncResource):
             timeout=timeout,
         )
         raw = await self._client.request("GET", f"/keys/{key_id}", options=opts)
-        return _key_from_envelope(raw)
+        return _key_from_response(raw)
 
     async def delete(
         self,

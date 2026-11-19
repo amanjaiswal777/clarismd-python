@@ -17,6 +17,7 @@ from clarismd import (
     TextCompletion,
 )
 
+from . import _shapes as shapes
 from .conftest import BASE_URL
 
 # ---------------------------------------------------------------------------
@@ -61,6 +62,39 @@ async def test_legacy_completions_async(
 
     result = await async_client.completions.create(model="m", prompt="hi")
     assert result.choices[0].text == "ok"
+
+
+def test_legacy_completions_send_governance_headers(client: ClarisMD, httpx_mock) -> None:
+    """``clarismd_policy`` / ``clarismd_phi_action`` reach the gateway on completions."""
+    httpx_mock.add_response(
+        method="POST",
+        url=f"{BASE_URL}/completions",
+        json={"id": "c", "object": "text_completion", "created": 1, "model": "m",
+              "choices": [{"index": 0, "text": "ok"}]},
+    )
+    client.completions.create(
+        model="m", prompt="hi", clarismd_phi_action="block",
+        clarismd_policy="0b6f6a3e-5a1d-4c55-9a7e-6f0f3f1c2d4b",
+    )
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert request.headers["X-ClarisMD-PHI-Action"] == "block"
+    assert request.headers["X-ClarisMD-Policy"] == "0b6f6a3e-5a1d-4c55-9a7e-6f0f3f1c2d4b"
+
+
+@pytest.mark.parametrize("kwarg", ["clarismd_policy", "clarismd_phi_action"])
+def test_embeddings_reject_governance_kwargs(client: ClarisMD, kwarg: str) -> None:
+    """The gateway does not PHI-scan embeddings, so the options are not offered there."""
+    with pytest.raises(TypeError):
+        client.embeddings.create(model="m", input="x", **{kwarg: "block"})
+
+
+@pytest.mark.parametrize("kwarg", ["clarismd_policy", "clarismd_phi_action"])
+async def test_embeddings_reject_governance_kwargs_async(
+    async_client: AsyncClarisMD, kwarg: str
+) -> None:
+    with pytest.raises(TypeError):
+        await async_client.embeddings.create(model="m", input="x", **{kwarg: "block"})
 
 
 # ---------------------------------------------------------------------------
@@ -179,12 +213,13 @@ async def test_audit_list_async(
 ) -> None:
     httpx_mock.add_response(
         method="GET",
-        url=f"{BASE_URL}/audit/logs?limit=1",
-        json={"data": [], "next_cursor": None, "has_more": False},
+        url=f"{BASE_URL}/audit/logs?limit=1&offset=1",
+        json=shapes.page(shapes.log("a2", 2), total=2, limit=1, offset=1),
     )
 
-    page = await async_client.audit.list(limit=1)
-    assert page.data == []
+    page = await async_client.audit.list(limit=1, offset=1)
+    assert [entry.id for entry in page.logs] == ["a2"]
+    assert page.has_more is False
 
 
 @pytest.mark.asyncio
@@ -194,7 +229,7 @@ async def test_audit_get_async(
     httpx_mock.add_response(
         method="GET",
         url=f"{BASE_URL}/audit/logs/audit_xyz",
-        json={"id": "audit_xyz", "phi_detected": False},
+        json=shapes.log("audit_xyz"),
     )
 
     log = await async_client.audit.get("audit_xyz")
@@ -208,12 +243,14 @@ async def test_audit_export_async(
     httpx_mock.add_response(
         method="POST",
         url=f"{BASE_URL}/audit/export",
-        content=b"%PDF-1.7",
-        headers={"content-type": "application/pdf"},
+        json=shapes.export("pdf"),
     )
 
-    blob = await async_client.audit.export(format="pdf")
-    assert blob.startswith(b"%PDF")
+    exp = await async_client.audit.export(format="pdf", request_id="req_1")
+    assert exp.pdf_bytes().startswith(b"%PDF")
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert json.loads(request.content) == {"format": "pdf", "request_id": "req_1"}
 
 
 @pytest.mark.asyncio
@@ -223,30 +260,31 @@ async def test_keys_full_lifecycle_async(
     httpx_mock.add_response(
         method="GET",
         url=f"{BASE_URL}/keys",
-        json={"data": [{"id": "k1", "name": "n", "prefix": "cmd-x"}]},
+        json=[{**shapes.KEY, "id": "k1"}],
     )
     httpx_mock.add_response(
         method="POST",
         url=f"{BASE_URL}/keys",
-        json={"data": {"id": "k2", "name": "new", "prefix": "cmd-y", "secret": "s"}},
+        status_code=201,
+        json={**shapes.KEY, "id": "k2", "key": "s"},
     )
     httpx_mock.add_response(
         method="GET",
         url=f"{BASE_URL}/keys/k2",
-        json={"data": {"id": "k2", "name": "new", "prefix": "cmd-y"}},
+        json={**shapes.KEY, "id": "k2"},
     )
     httpx_mock.add_response(
         method="DELETE", url=f"{BASE_URL}/keys/k2", status_code=204
     )
 
     listed = await async_client.keys.list()
-    created = await async_client.keys.create(name="new")
+    created = await async_client.keys.create(name="new", permissions=["chat"], expires_in_days=7)
     fetched = await async_client.keys.get("k2")
     await async_client.keys.delete("k2")
 
     assert listed[0].id == "k1"
-    assert created.secret == "s"
-    assert fetched.secret is None
+    assert created.key == "s"
+    assert fetched.key is None
 
 
 @pytest.mark.asyncio

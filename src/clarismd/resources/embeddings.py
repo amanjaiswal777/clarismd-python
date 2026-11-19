@@ -1,13 +1,18 @@
 # Copyright (c) 2026 ClarisMD contributors.
 # SPDX-License-Identifier: Apache-2.0
 
-"""``client.embeddings.create(...)`` — vector embeddings."""
+"""``client.embeddings.create(...)`` — vector embeddings.
+
+No ``clarismd_policy`` / ``clarismd_phi_action`` here: the gateway does not
+PHI-scan embedding input, so there is nothing for those options to govern.
+They are accepted by ``chat.completions.create`` and ``completions.create``.
+"""
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any, Dict, List, Optional, Union
 
-from .._types import EmbeddingResponse, PHIAction
+from .._types import EmbeddingResponse
 from ._base import _AsyncResource, _options, _SyncResource
 
 
@@ -34,8 +39,6 @@ class EmbeddingsResource(_SyncResource):
         input: Union[str, List[str]],
         user: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
-        clarismd_policy: Optional[str] = None,
-        clarismd_phi_action: Optional[PHIAction] = None,
         clarismd_idempotency_key: Union[str, None, bool] = None,
         extra_headers: Optional[Mapping[str, str]] = None,
         timeout: Optional[float] = None,
@@ -43,8 +46,8 @@ class EmbeddingsResource(_SyncResource):
         body = _build_body(model=model, input_=input, user=user, metadata=metadata)
         opts = _options(
             idempotency=clarismd_idempotency_key,
-            policy=clarismd_policy,
-            phi_action=clarismd_phi_action,
+            policy=None,  # not offered on embeddings (no PHI scan to govern)
+            phi_action=None,
             extra_headers=extra_headers,
             timeout=timeout,
         )
@@ -65,8 +68,6 @@ class AsyncEmbeddingsResource(_AsyncResource):
         input: Union[str, List[str]],
         user: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
-        clarismd_policy: Optional[str] = None,
-        clarismd_phi_action: Optional[PHIAction] = None,
         clarismd_idempotency_key: Union[str, None, bool] = None,
         extra_headers: Optional[Mapping[str, str]] = None,
         timeout: Optional[float] = None,
@@ -74,8 +75,8 @@ class AsyncEmbeddingsResource(_AsyncResource):
         body = _build_body(model=model, input_=input, user=user, metadata=metadata)
         opts = _options(
             idempotency=clarismd_idempotency_key,
-            policy=clarismd_policy,
-            phi_action=clarismd_phi_action,
+            policy=None,  # not offered on embeddings (no PHI scan to govern)
+            phi_action=None,
             extra_headers=extra_headers,
             timeout=timeout,
         )

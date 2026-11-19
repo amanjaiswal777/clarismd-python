@@ -80,13 +80,13 @@ def test_chat_completions_clarismd_overrides_become_headers(
     client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": "Hi"}],
-        clarismd_policy="hipaa-strict",
+        clarismd_policy="0b6f6a3e-5a1d-4c55-9a7e-6f0f3f1c2d4b",
         clarismd_phi_action="redact",
     )
 
     request = httpx_mock.get_request()
     assert request is not None
-    assert request.headers["X-ClarisMD-Policy"] == "hipaa-strict"
+    assert request.headers["X-ClarisMD-Policy"] == "0b6f6a3e-5a1d-4c55-9a7e-6f0f3f1c2d4b"
     assert request.headers["X-ClarisMD-PHI-Action"] == "redact"
 
 
