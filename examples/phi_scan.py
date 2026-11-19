@@ -14,11 +14,12 @@ SAMPLE = (
 
 def main() -> None:
     client = ClarisMD()
-    result = client.phi.scan(SAMPLE)
+    result = client.phi.scan(SAMPLE).results[0]
 
     print(f"PHI detected: {result.detected}")
     for entity in result.entities:
-        print(f"  - {entity.type}: {entity.text!r}")
+        print(f"  - {entity.subtype or entity.type}: {entity.matched_text!r} "
+              f"[{entity.location.start}-{entity.location.end}]")
 
 
 if __name__ == "__main__":

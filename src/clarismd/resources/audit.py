@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Literal, Optional, Union
 
-from .._types import AuditLog, AuditLogPage
+from .._types import AuditExport, AuditLog, AuditLogPage
 from ._base import _AsyncResource, _options, _SyncResource
 
 
@@ -23,7 +23,9 @@ def _list_params(
     start_date: Union[None, str, datetime],
     end_date: Union[None, str, datetime],
     limit: Optional[int],
-    cursor: Optional[str],
+    offset: Optional[int],
+    action: Optional[str],
+    resource_type: Optional[str],
     request_id: Optional[str],
     phi_detected: Optional[bool],
 ) -> Dict[str, Any]:
@@ -34,8 +36,12 @@ def _list_params(
         params["end_date"] = _isoformat(end_date)
     if limit is not None:
         params["limit"] = limit
-    if cursor is not None:
-        params["cursor"] = cursor
+    if offset is not None:
+        params["offset"] = offset
+    if action is not None:
+        params["action"] = action
+    if resource_type is not None:
+        params["resource_type"] = resource_type
     if request_id is not None:
         params["request_id"] = request_id
     if phi_detected is not None:
@@ -48,12 +54,18 @@ def _export_body(
     format: str,
     start_date: Union[None, str, datetime],
     end_date: Union[None, str, datetime],
+    request_id: Optional[str],
+    phi_detected: Optional[bool],
 ) -> Dict[str, Any]:
     body: Dict[str, Any] = {"format": format}
     if start_date is not None:
         body["start_date"] = _isoformat(start_date)
     if end_date is not None:
         body["end_date"] = _isoformat(end_date)
+    if request_id is not None:
+        body["request_id"] = request_id
+    if phi_detected is not None:
+        body["phi_detected"] = phi_detected
     return body
 
 
@@ -64,7 +76,9 @@ class AuditResource(_SyncResource):
         start_date: Union[None, str, datetime] = None,
         end_date: Union[None, str, datetime] = None,
         limit: Optional[int] = None,
-        cursor: Optional[str] = None,
+        offset: Optional[int] = None,
+        action: Optional[str] = None,
+        resource_type: Optional[str] = None,
         request_id: Optional[str] = None,
         phi_detected: Optional[bool] = None,
         extra_headers: Optional[Mapping[str, str]] = None,
@@ -74,7 +88,9 @@ class AuditResource(_SyncResource):
             start_date=start_date,
             end_date=end_date,
             limit=limit,
-            cursor=cursor,
+            offset=offset,
+            action=action,
+            resource_type=resource_type,
             request_id=request_id,
             phi_detected=phi_detected,
         )
@@ -117,19 +133,21 @@ class AuditResource(_SyncResource):
     def export(
         self,
         *,
-        format: str = "json",
+        format: Literal["json", "pdf"] = "json",
         start_date: Union[None, str, datetime] = None,
         end_date: Union[None, str, datetime] = None,
+        request_id: Optional[str] = None,
+        phi_detected: Optional[bool] = None,
         clarismd_idempotency_key: Union[str, None, bool] = None,
         extra_headers: Optional[Mapping[str, str]] = None,
         timeout: Optional[float] = None,
-    ) -> bytes:
-        """Export an audit evidence package.
+    ) -> AuditExport:
+        """Export a signed audit evidence package.
 
-        Returns the raw bytes — the gateway responds with a signed
-        archive (PDF or JSON depending on ``format``). Callers write
-        the bytes to disk or feed them to whatever evidence locker
-        they're integrating with.
+        JSON exports carry ``payload``; PDF exports carry ``pdf_base64``
+        (:meth:`AuditExport.pdf_bytes` decodes it). ``signature`` is Ed25519
+        and verifies offline with the public key at ``public_keys_url`` —
+        see "Verifying evidence" in the README.
         """
         opts = _options(
             idempotency=clarismd_idempotency_key,
@@ -138,21 +156,19 @@ class AuditResource(_SyncResource):
             extra_headers=extra_headers,
             timeout=timeout,
         )
-        result = self._client.request(
+        return self._client.request(
             "POST",
             "/audit/export",
-            json_body=_export_body(format=format, start_date=start_date, end_date=end_date),
+            json_body=_export_body(
+                format=format,
+                start_date=start_date,
+                end_date=end_date,
+                request_id=request_id,
+                phi_detected=phi_detected,
+            ),
             options=opts,
+            cast_to=AuditExport,
         )
-        if isinstance(result, bytes):
-            return result
-        if isinstance(result, dict):
-            # Some operators emit JSON envelopes around the export blob;
-            # serialize to UTF-8 so callers always receive bytes.
-            import json
-
-            return json.dumps(result).encode("utf-8")
-        return b""
 
 
 class AsyncAuditResource(_AsyncResource):
@@ -162,7 +178,9 @@ class AsyncAuditResource(_AsyncResource):
         start_date: Union[None, str, datetime] = None,
         end_date: Union[None, str, datetime] = None,
         limit: Optional[int] = None,
-        cursor: Optional[str] = None,
+        offset: Optional[int] = None,
+        action: Optional[str] = None,
+        resource_type: Optional[str] = None,
         request_id: Optional[str] = None,
         phi_detected: Optional[bool] = None,
         extra_headers: Optional[Mapping[str, str]] = None,
@@ -172,7 +190,9 @@ class AsyncAuditResource(_AsyncResource):
             start_date=start_date,
             end_date=end_date,
             limit=limit,
-            cursor=cursor,
+            offset=offset,
+            action=action,
+            resource_type=resource_type,
             request_id=request_id,
             phi_detected=phi_detected,
         )
@@ -215,13 +235,15 @@ class AsyncAuditResource(_AsyncResource):
     async def export(
         self,
         *,
-        format: str = "json",
+        format: Literal["json", "pdf"] = "json",
         start_date: Union[None, str, datetime] = None,
         end_date: Union[None, str, datetime] = None,
+        request_id: Optional[str] = None,
+        phi_detected: Optional[bool] = None,
         clarismd_idempotency_key: Union[str, None, bool] = None,
         extra_headers: Optional[Mapping[str, str]] = None,
         timeout: Optional[float] = None,
-    ) -> bytes:
+    ) -> AuditExport:
         opts = _options(
             idempotency=clarismd_idempotency_key,
             policy=None,
@@ -229,19 +251,19 @@ class AsyncAuditResource(_AsyncResource):
             extra_headers=extra_headers,
             timeout=timeout,
         )
-        result = await self._client.request(
+        return await self._client.request(
             "POST",
             "/audit/export",
-            json_body=_export_body(format=format, start_date=start_date, end_date=end_date),
+            json_body=_export_body(
+                format=format,
+                start_date=start_date,
+                end_date=end_date,
+                request_id=request_id,
+                phi_detected=phi_detected,
+            ),
             options=opts,
+            cast_to=AuditExport,
         )
-        if isinstance(result, bytes):
-            return result
-        if isinstance(result, dict):
-            import json
-
-            return json.dumps(result).encode("utf-8")
-        return b""
 
 
 __all__ = ["AuditResource", "AsyncAuditResource"]

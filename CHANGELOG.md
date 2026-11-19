@@ -8,6 +8,42 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- `clarismd_policy` / `clarismd_phi_action` are now honored by the gateway
+  (they were sent but ignored). Both are tighten-only; invalid values raise
+  `UnprocessableEntityError`. See "ClarisMD-specific request options".
+- **Breaking:** `embeddings.create` no longer accepts `clarismd_policy` /
+  `clarismd_phi_action`. The gateway does not PHI-scan embedding input, so the
+  options never applied there.
+- **Breaking:** `keys`, `phi.scan` and `audit` now match what the gateway
+  actually returns. The previous models described shapes it never sent, so
+  `phi.scan(...).detected` was **always False**, `keys.create(...).secret`
+  was always `None`, and `audit.list(cursor=...)` always returned page one.
+  - `keys.create(name=, permissions=, expires_in_days=)`; the one-time secret
+    is in `key`. `APIKey` fields are `key_prefix`, `permissions`, `revoked`,
+    `last_used`, `expires_at` (were `prefix`, `scopes`, `revoked_at`,
+    `last_used_at`, `secret`).
+  - `phi.scan()` returns `PHIScanResponse` (`results`: one `PHIScanResult`
+    per input). Entities are `type`, `subtype`, `severity`, `confidence`,
+    `location.start/end`, `matched_text`; `PHIScanResult.detected` is kept as
+    a property. New `scan_types` / `use_ml` arguments.
+  - `audit.list()` uses `offset` (was `cursor`, which the gateway ignored)
+    and returns `logs`, `total`, `limit`, `offset`, `has_more`; new `action`
+    and `resource_type` filters. `AuditLog` matches the gateway's entry shape,
+    including the hash-chain fields `chain_seq`, `prev_hash`, `entry_hash`.
+  - `audit.export()` returns a typed, Ed25519-signed `AuditExport` (was JSON
+    re-serialised to bytes, with `request_id` injected into them);
+    `AuditExport.pdf_bytes()` decodes PDF exports. `format` is
+    `"json" | "pdf"`; new `request_id` / `phi_detected` filters.
+- A plain string `user` on chat/completions is now accepted by the gateway
+  (it was rejected with a 422).
+- `scripts/codegen.sh` defaults to `../clarismd-backend/packages/openapi/v1.yaml`
+  (the old default path did not exist).
+
+### Documented
+
+- Agent gate: `metadata={"agent_id": ...}` on chat/completions runs the
+  agent's gate check before the provider call.
+- Verifying signed evidence offline.
 - Python 3.10 is now the minimum. The fix for anyio's TLS host-name
   advisory (GHSA-82r6-8w77-94w6), which the async client's TLS
   connections go through, ships only in anyio 4.14.2, and anyio

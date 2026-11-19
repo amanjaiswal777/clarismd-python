@@ -155,7 +155,7 @@ def test_get_requests_have_no_idempotency_header(
     httpx_mock.add_response(
         method="GET",
         url=f"{BASE_URL}/audit/logs",
-        json={"data": [], "next_cursor": None, "has_more": False},
+        json={"logs": [], "total": 0, "limit": 50, "offset": 0, "has_more": False},
     )
 
     client.audit.list()

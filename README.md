@@ -162,10 +162,11 @@ asyncio.run(main())
 Run text through the PHI detector without making a generation call:
 
 ```python
-result = client.phi.scan("Patient John Doe, MRN 4471, called the clinic.")
+response = client.phi.scan("Patient John Doe, MRN 4471, called the clinic.")
+result = response.results[0]  # one result per input; pass a list to scan a batch
 if result.detected:
     for entity in result.entities:
-        print(entity.type, "->", entity.text)
+        print(entity.subtype or entity.type, "->", entity.matched_text, entity.location)
 ```
 
 ---
@@ -175,19 +176,69 @@ if result.detected:
 Pull a signed evidence bundle for a date range:
 
 ```python
-import base64
-import json
 from datetime import datetime, timezone
 
 bundle = client.audit.export(
-    format="pdf",
+    format="pdf",  # or "json" (default): the logs are in bundle.payload
     start_date=datetime(2026, 5, 1, tzinfo=timezone.utc),
     end_date=datetime(2026, 5, 31, tzinfo=timezone.utc),
 )
-# The gateway returns a signed JSON envelope with the PDF base64-encoded inside.
-envelope = json.loads(bundle)
 with open("audit-may.pdf", "wb") as f:
-    f.write(base64.b64decode(envelope["pdf_base64"]))
+    f.write(bundle.pdf_bytes())
+```
+
+List entries with offset paging; each carries its position in your
+organisation's stored hash chain (`chain_seq`, `prev_hash`, `entry_hash`):
+
+```python
+page = client.audit.list(phi_detected=True, limit=100, offset=0)
+print(page.total, page.has_more, page.logs[0].entry_hash if page.logs else None)
+```
+
+### Verifying evidence
+
+Exports and evidence packages are signed with **Ed25519**
+(`signature="ed25519:<key_id>:<base64>"`). Anyone can verify them with the
+public key, without a ClarisMD account and without trusting the server:
+
+```bash
+python clarismd-backend/scripts/verify_evidence.py export.json \
+  --keys-url https://api.clarismd.com/api/v1/evidence/signing-keys
+```
+
+The verifier checks the signature and re-hashes every chained log entry. Pin
+the key's `kid` out of band; a key fetched from the server being audited only
+proves consistency.
+
+---
+
+## Agent gate
+
+Pass the id of an agent you registered (`POST /api/v1/agents`) in `metadata`
+and the gateway runs that agent's gate check **before** the model is called:
+
+```python
+client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": prompt}],
+    metadata={"agent_id": "0b6f6a3e-5a1d-4c55-9a7e-6f0f3f1c2d4b", "workflow_name": "prior-auth"},
+)
+```
+
+A suspended agent, a data classification outside its allowlist, or a trust
+score below the threshold (70 when the input contains PHI, 50 otherwise)
+raises `PermissionDeniedError` (`code="agent_gate_denied"`) and nothing is sent
+to the provider. An `agent_id` that is not one of your agents raises
+`UnprocessableEntityError` (`code="invalid_agent"`). This gates the model call
+made on the agent's behalf; it is not tool-call authorization.
+
+---
+
+## API keys
+
+```python
+key = client.keys.create(name="ci", permissions=["chat"], expires_in_days=90)
+print(key.key)  # the full secret, returned once: store it now
 ```
 
 ---
@@ -238,13 +289,21 @@ Every `APIError` carries `.status_code`, `.request_id`, `.code`, `.param`,
 
 ### ClarisMD-specific request options
 
-Two extra kwargs are accepted on every method and translate into HTTP headers
-the gateway understands:
+Two extra kwargs on `chat.completions.create` and `completions.create`
+translate into headers the gateway applies to that request:
 
 | Kwarg                | Header                       | Effect |
 |----------------------|------------------------------|--------|
-| `clarismd_policy`    | `X-ClarisMD-Policy`          | Override the policy for this request |
-| `clarismd_phi_action`| `X-ClarisMD-PHI-Action`      | One of `block`, `redact`, `tokenize`, `alert` |
+| `clarismd_policy`    | `X-ClarisMD-Policy`          | Id of one of your own active security policies; its rules are applied on top of your settings for this call |
+| `clarismd_phi_action`| `X-ClarisMD-PHI-Action`      | `block`, `redact` (alias `tokenize`) or `alert` |
+
+Both are **tighten-only**: they can make this call stricter than your
+organisation's settings, never looser (`alert` on a tenant that redacts still
+redacts). `block` refuses a request containing PHI before the provider is
+called (`PHIPolicyViolationError`). An unknown value, or a policy id that is not
+your own active policy, raises `UnprocessableEntityError`. The response header
+`X-ClarisMD-PHI-Action-Applied` reports what the gateway actually did with PHI:
+`redact`, `alert`, or `none`.
 
 ```python
 client.chat.completions.create(

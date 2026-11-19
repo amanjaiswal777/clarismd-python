@@ -1,99 +1,92 @@
 # Copyright (c) 2026 ClarisMD contributors.
 # SPDX-License-Identifier: Apache-2.0
 
-"""``client.audit.{list,get,export}``."""
+"""``client.audit.{list,get,export}`` against the gateway's real shapes."""
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 
-from clarismd import AuditLog, AuditLogPage, ClarisMD
+import pytest
 
+from clarismd import AuditExport, AuditLog, AuditLogPage, ClarisMD
+
+from ._shapes import export, log, page
 from .conftest import BASE_URL
 
 
-def _row(audit_id: str) -> dict:
-    return {
-        "id": audit_id,
+def test_audit_list_uses_offset_paging(client: ClarisMD, httpx_mock) -> None:
+    httpx_mock.add_response(
+        method="GET", url=f"{BASE_URL}/audit/logs?limit=2",
+        json=page(log("a1", 1), log("a2", 2), total=3, limit=2, offset=0),
+    )
+    httpx_mock.add_response(
+        method="GET", url=f"{BASE_URL}/audit/logs?limit=2&offset=2",
+        json=page(log("a3", 3), total=3, limit=2, offset=2),
+    )
+
+    first = client.audit.list(limit=2)
+    assert isinstance(first, AuditLogPage)
+    assert [entry.id for entry in first.logs] == ["a1", "a2"]
+    assert (first.total, first.has_more) == (3, True)
+    assert isinstance(first.logs[0], AuditLog)
+    assert first.logs[0].chain_seq == 1 and first.logs[0].entry_hash == "b" * 64
+
+    second = client.audit.list(limit=2, offset=first.offset + len(first.logs))
+    assert [entry.id for entry in second.logs] == ["a3"]
+    assert second.has_more is False
+
+
+def test_audit_list_forwards_filters(client: ClarisMD, httpx_mock) -> None:
+    httpx_mock.add_response(method="GET", json=page(total=0, limit=50, offset=0))
+
+    client.audit.list(
+        start_date=datetime(2026, 5, 1, tzinfo=timezone.utc),
+        end_date="2026-05-31T00:00:00Z",
+        action="PHI",
+        resource_type="llm_request",
+        request_id="req_x",
+        phi_detected=True,
+    )
+    request = httpx_mock.get_request()
+    assert request is not None
+    q = dict(request.url.params)
+    assert q == {
+        "start_date": "2026-05-01T00:00:00+00:00",
+        "end_date": "2026-05-31T00:00:00Z",
+        "action": "PHI",
+        "resource_type": "llm_request",
         "request_id": "req_x",
-        "user_id": "user_1",
-        "endpoint": "/v1/chat/completions",
-        "model": "gpt-4o-mini",
-        "phi_detected": True,
-        "phi_action": "redact",
-        "cost_usd": 0.0034,
-        "timestamp": "2026-05-24T01:23:45+00:00",
-        "metadata": {},
+        "phi_detected": "true",
     }
 
 
-def test_audit_list_pages(client: ClarisMD, httpx_mock) -> None:
-    """First call returns a cursor; second call uses it to fetch the next page."""
-    httpx_mock.add_response(
-        method="GET",
-        url=f"{BASE_URL}/audit/logs?limit=2",
-        json={"data": [_row("a1"), _row("a2")], "next_cursor": "cursor-2", "has_more": True},
-    )
-    httpx_mock.add_response(
-        method="GET",
-        url=f"{BASE_URL}/audit/logs?limit=2&cursor=cursor-2",
-        json={"data": [_row("a3")], "next_cursor": None, "has_more": False},
-    )
-
-    page1 = client.audit.list(limit=2)
-    assert isinstance(page1, AuditLogPage)
-    assert page1.has_more is True
-    assert page1.next_cursor == "cursor-2"
-    assert [log.id for log in page1.data] == ["a1", "a2"]
-
-    page2 = client.audit.list(limit=2, cursor="cursor-2")
-    assert page2.has_more is False
-    assert [log.id for log in page2.data] == ["a3"]
+def test_audit_list_rejects_old_cursor_kwarg(client: ClarisMD) -> None:
+    with pytest.raises(TypeError):
+        client.audit.list(cursor="c1")  # type: ignore[call-arg]
 
 
-def test_audit_list_serializes_datetime_filters(
-    client: ClarisMD, httpx_mock
-) -> None:
-    """``datetime`` values are passed as ISO-8601 query params."""
-    httpx_mock.add_response(
-        method="GET",
-        json={"data": [], "next_cursor": None, "has_more": False},
-    )
+def test_audit_get(client: ClarisMD, httpx_mock) -> None:
+    httpx_mock.add_response(method="GET", url=f"{BASE_URL}/audit/logs/a9", json=log("a9", 9))
+    entry = client.audit.get("a9")
+    assert entry.action == "PHI_REDACTED_AND_ALLOWED"
+    assert entry.details == {"phi_detected": True}
 
-    start = datetime(2026, 5, 1, tzinfo=timezone.utc)
-    end = datetime(2026, 5, 31, tzinfo=timezone.utc)
-    client.audit.list(start_date=start, end_date=end, phi_detected=True)
 
+def test_audit_export_json_is_typed_and_signed(client: ClarisMD, httpx_mock) -> None:
+    httpx_mock.add_response(method="POST", url=f"{BASE_URL}/audit/export", json=export("json"))
+
+    exp = client.audit.export(start_date="2026-05-01", phi_detected=True)
+    assert isinstance(exp, AuditExport)
+    assert exp.signature_alg == "Ed25519"
+    assert exp.payload is not None and exp.payload["logs"][0]["entry_hash"] == "b" * 64
     request = httpx_mock.get_request()
     assert request is not None
-    qs = request.url.params
-    assert qs["start_date"] == start.isoformat()
-    assert qs["end_date"] == end.isoformat()
-    assert qs["phi_detected"] == "true"
+    assert json.loads(request.content) == {"format": "json", "start_date": "2026-05-01", "phi_detected": True}
 
 
-def test_audit_get_returns_single_record(client: ClarisMD, httpx_mock) -> None:
-    """``audit.get`` deserializes one ``AuditLog`` row."""
-    httpx_mock.add_response(
-        method="GET",
-        url=f"{BASE_URL}/audit/logs/audit_123",
-        json=_row("audit_123"),
-    )
+def test_audit_export_pdf_decodes(client: ClarisMD, httpx_mock) -> None:
+    httpx_mock.add_response(method="POST", url=f"{BASE_URL}/audit/export", json=export("pdf"))
 
-    log = client.audit.get("audit_123")
-    assert isinstance(log, AuditLog)
-    assert log.id == "audit_123"
-    assert log.phi_detected is True
-
-
-def test_audit_export_returns_bytes(client: ClarisMD, httpx_mock) -> None:
-    """``audit.export`` returns the raw evidence bytes."""
-    httpx_mock.add_response(
-        method="POST",
-        url=f"{BASE_URL}/audit/export",
-        content=b"%PDF-1.7\n...",
-        headers={"content-type": "application/pdf"},
-    )
-
-    result = client.audit.export(format="pdf")
-    assert isinstance(result, bytes)
-    assert result.startswith(b"%PDF")
+    exp = client.audit.export(format="pdf")
+    assert exp.pdf_bytes().startswith(b"%PDF")

@@ -138,17 +138,44 @@ class ModerationResponse(_LooseModel):
 # ---------------------------------------------------------------------------
 
 
-class PHIEntity(_LooseModel):
-    type: str
-    text: str
+class PHILocation(_LooseModel):
     start: int = 0
     end: int = 0
-    score: Optional[float] = None
+
+
+class PHIEntity(_LooseModel):
+    type: str
+    """Detector category, e.g. ``"pii"``."""
+    subtype: Optional[str] = None
+    """Finer identifier class, e.g. ``"ssn"``, ``"mrn"``, ``"dob"``."""
+    severity: str = ""
+    confidence: float = 0.0
+    location: PHILocation = Field(default_factory=PHILocation)
+    """Character offsets into the scanned string."""
+    matched_pattern: Optional[str] = None
+    matched_text: Optional[str] = None
 
 
 class PHIScanResult(_LooseModel):
-    detected: bool = False
+    """One result per input string, in input order."""
+
+    scan_id: str = ""
+    overall_risk_score: float = 0.0
+    should_block: bool = False
     entities: List[PHIEntity] = Field(default_factory=list)
+    """Empty when no PHI/PII was found."""
+    scan_duration_ms: Optional[float] = None
+
+    @property
+    def detected(self) -> bool:
+        """True when at least one entity was found."""
+        return bool(self.entities)
+
+
+class PHIScanResponse(_LooseModel):
+    """Response of ``POST /v1/phi/scan``: one result per input, in order."""
+
+    results: List[PHIScanResult]
     request_id: Optional[str] = None
 
 
@@ -159,23 +186,62 @@ class PHIScanResult(_LooseModel):
 
 class AuditLog(_LooseModel):
     id: str
-    request_id: Optional[str] = None
-    user_id: Optional[str] = None
+    action: str = ""
+    resource_type: Optional[str] = None
+    resource_id: Optional[str] = None
+    details: Dict[str, Any] = Field(default_factory=dict)
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    created_at: Optional[datetime] = None
     org_id: Optional[str] = None
-    endpoint: Optional[str] = None
-    model: Optional[str] = None
-    phi_detected: bool = False
-    phi_action: Optional[str] = None
-    cost_usd: Optional[float] = None
-    timestamp: Optional[datetime] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    user_id: Optional[str] = None
+    chain_seq: Optional[int] = None
+    """Position in the organisation's stored hash chain (None for pre-chain entries)."""
+    prev_hash: Optional[str] = None
+    entry_hash: Optional[str] = None
+    """sha256 over the entry's canonical fields and ``prev_hash``."""
+    created_at_canonical: Optional[str] = None
+    """The exact timestamp string that ``entry_hash`` covers."""
 
 
 class AuditLogPage(_LooseModel):
-    data: List[AuditLog] = Field(default_factory=list)
-    next_cursor: Optional[str] = None
+    """Offset-paginated page of audit logs."""
+
+    logs: List[AuditLog] = Field(default_factory=list)
+    total: int = 0
+    """Total matching entries (all pages)."""
+    limit: int = 0
+    offset: int = 0
     has_more: bool = False
     request_id: Optional[str] = None
+
+
+class AuditExport(_LooseModel):
+    """Signed audit export.
+
+    JSON exports carry ``payload``; PDF exports carry ``pdf_base64`` (see
+    :meth:`pdf_bytes`). ``signature`` is ``ed25519:<key_id>:<base64>`` and
+    verifies offline with the public key at ``public_keys_url``.
+    """
+
+    export_id: str
+    format: str
+    record_count: int = 0
+    generated_at: Optional[str] = None
+    download_url: Optional[str] = None
+    payload: Optional[Dict[str, Any]] = None
+    signature: Optional[str] = None
+    signature_alg: Optional[str] = None
+    key_id: Optional[str] = None
+    public_keys_url: Optional[str] = None
+    pdf_base64: Optional[str] = None
+    request_id: Optional[str] = None
+
+    def pdf_bytes(self) -> bytes:
+        """Decoded PDF for ``format="pdf"`` exports (empty otherwise)."""
+        import base64
+
+        return base64.b64decode(self.pdf_base64) if self.pdf_base64 else b""
 
 
 # ---------------------------------------------------------------------------
@@ -230,15 +296,17 @@ class EvidenceArtifact(_LooseModel):
 class APIKey(_LooseModel):
     id: str
     name: Optional[str] = None
-    prefix: Optional[str] = None
-    secret: Optional[str] = Field(
+    key_prefix: str = ""
+    key: Optional[str] = Field(
         default=None,
         description="Full secret token. Only present in the response of POST /v1/keys.",
     )
-    scopes: List[str] = Field(default_factory=list)
+    permissions: Optional[List[str]] = None
+    revoked: bool = False
     created_at: Optional[datetime] = None
-    last_used_at: Optional[datetime] = None
-    revoked_at: Optional[datetime] = None
+    last_used: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    created_by_session_id: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

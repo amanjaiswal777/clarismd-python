@@ -47,6 +47,7 @@ from ._exceptions import (
 from ._streaming import AsyncStream, Stream
 from ._types import (
     APIKey,
+    AuditExport,
     AuditLog,
     AuditLogPage,
     ChatCompletion,
@@ -66,6 +67,8 @@ from ._types import (
     ModerationResult,
     PHIAction,
     PHIEntity,
+    PHILocation,
+    PHIScanResponse,
     PHIScanResult,
     Requirement,
     TextCompletion,
@@ -97,6 +100,7 @@ __all__ = [
     "InternalServerError",
     # Types
     "APIKey",
+    "AuditExport",
     "AuditLog",
     "AuditLogPage",
     "ChatCompletion",
@@ -116,6 +120,8 @@ __all__ = [
     "ModerationResult",
     "PHIAction",
     "PHIEntity",
+    "PHILocation",
+    "PHIScanResponse",
     "PHIScanResult",
     "Requirement",
     "TextCompletion",

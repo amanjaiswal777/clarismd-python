@@ -15,6 +15,7 @@ from clarismd import (
     RateLimitError,
 )
 
+from ._shapes import SSN_RESULT
 from .conftest import BASE_URL
 
 CHAT_URL = f"{BASE_URL}/chat/completions"
@@ -134,12 +135,12 @@ async def test_async_phi_scan(async_client: AsyncClarisMD, httpx_mock) -> None:
     httpx_mock.add_response(
         method="POST",
         url=f"{BASE_URL}/phi/scan",
-        json={"detected": True, "entities": [{"type": "EMAIL", "text": "a@b.test"}]},
+        json={"results": [SSN_RESULT]},
     )
 
-    result = await async_client.phi.scan("contact a@b.test")
-    assert result.detected is True
-    assert result.entities[0].type == "EMAIL"
+    response = await async_client.phi.scan("SSN 123-45-6789", scan_types=["pii"])
+    assert response.results[0].detected is True
+    assert response.results[0].entities[0].subtype == "ssn"
 
 
 @pytest.mark.asyncio

@@ -15,7 +15,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SDK_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SPEC="${1:-$SDK_ROOT/../packages/openapi/v1.yaml}"
+# The spec is generated in the sibling clarismd-backend repo
+# (scripts/export_openapi.py); the default assumes a side-by-side checkout.
+SPEC="${1:-$SDK_ROOT/../clarismd-backend/packages/openapi/v1.yaml}"
 
 if [ ! -f "$SPEC" ]; then
   echo "openapi spec not found: $SPEC" >&2
